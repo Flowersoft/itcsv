@@ -127,8 +127,7 @@ document.getElementById("scanBtn").addEventListener("click", () => {
   );
 
   readerDiv.addEventListener("click", () => {
-    /*scanner.resume(); 
-    scanner.getState();
+    scanner.resume(); 
     scanner._qrCodeSuccessCallback = decodedText => {
       const input = document.getElementById("filterValue");
       input.value = decodedText;
@@ -136,8 +135,7 @@ document.getElementById("scanBtn").addEventListener("click", () => {
       scanner.stop().then(() => {
         readerDiv.style.display = "none";
       });
-    }*/;
-    readerDiv.style.display = "none";
+    };
   }, { once: true });
 });
 
