@@ -119,25 +119,26 @@ document.getElementById("scanBtn").addEventListener("click", () => {
     { facingMode: "environment" },
     { fps: 10, qrbox: 250 },
     decodedText => {
-      scanner.pause();
+      const input = document.getElementById("filterValue");
+      input.value = decodedText;
+      drawVirtualTable();
+      scanner.stop().then(() => {
+        readerDiv.style.display = "none";
+      });
     },
     errorMessage => {
       console.warn("Hiba:", errorMessage);
     }
-  );
+  ).then(() => {
+    scanner.pause();
+  });
 
   readerDiv.addEventListener("click", () => {
-    scanner.resume(); 
-    scanner._qrCodeSuccessCallback = decodedText => {
-      const input = document.getElementById("filterValue");
-      input.value = decodedText;
-	  drawVirtualTable();
-      scanner.stop().then(() => {
-        readerDiv.style.display = "none";
-      });
-    };
-  }, { once: true });
+    scanner.resume();
+  });
 });
+
+
 
 document.getElementById('csvFile').addEventListener('change', e => {
   const file = e.target.files[0];
