@@ -132,14 +132,13 @@ document.getElementById("scanBtn").addEventListener("click", () => {
     scanner._qrCodeSuccessCallback = decodedText => {
       const input = document.getElementById("filterValue");
       input.value = decodedText;
-	  drawVirtualTable()
+	  drawVirtualTable();
       scanner.stop().then(() => {
         readerDiv.style.display = "none";
       });
     };
   }, { once: true });
 });
-
 
 document.getElementById('csvFile').addEventListener('change', e => {
   const file = e.target.files[0];
