@@ -258,6 +258,42 @@ let currentEdit = null; // {rowIndex, colIndex, td}
 const rowHeight = 28;     // px
 const visibleRows = 20;   // egyszerre ennyi sor renderelve
 
+function loadBaseCsv() {
+  fetch("base.csv")
+    .then(resp => {
+      if (!resp.ok) throw new Error("base.csv nem található");
+      return resp.arrayBuffer();
+    })
+    .then(buffer => {
+      const view = new Uint8Array(buffer);
+      let encoding = "utf-8";
+      if (view[0] === 0xEF && view[1] === 0xBB && view[2] === 0xBF) {
+        encoding = "utf-8"; // BOM → biztosan UTF-8
+      }
+      const decoder = new TextDecoder(encoding);
+      let text = decoder.decode(buffer);
+      if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.slice(1);
+      }
+      headers = [];
+      rows = [];
+      fieldDefinitions = {};
+      dataRegistry = {};
+      const delimiter = document.getElementById('delimiterInput')?.value || ",";
+      const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+      headers = lines[0].split(delimiter);
+      rows = lines.slice(1).map(line => line.split(delimiter));
+      console.log("base.csv betöltve induláskor");
+      buildFieldSelect();
+      drawVirtualTable();
+    })
+    .catch(err => {
+      console.warn("base.csv betöltése sikertelen:", err);
+    });
+}
+
+window.addEventListener("DOMContentLoaded", loadBaseCsv);
+
 document.getElementById("scanBtn").addEventListener("click", () => {
 //https://unpkg.com/html5-qrcode
   const readerDiv = document.getElementById("reader");
