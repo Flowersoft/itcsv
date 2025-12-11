@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
+  <title>IT_CSV - CSV Nézegető és Szerkesztő</title>
+  <script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0'></script>
+  <script src='https://cdn.jsdelivr.net/npm/hammerjs@2.0.8'></script>
+  <script src='https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0'></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <link rel='icon' type='image/png' href='/favicon.png'>
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: sans-serif;
+      margin-left: 4%;
+      margin-right: 4%;
+      padding: 10px;
+    }
+    h2 {
+      text-align: center;
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    canvas {
+      width: 90% !important;
+      height: auto !important;
+      max-width: 90%;
+      max-height: 400px;
+      display: block;
+      margin: 0 auto;
+      touch-action: none;
+    }
+    
+    select, input[type='text'], input[list], input[type='file'] {
+      width: 50%;
+      max-width: 250px;
+      font-size: 1em;
+      padding: 10px;
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+      border: 1px solid #444;
+      border-radius: 5px;
+    }
+    input[type='range'] {
+      height: 35px;
+      width: 300px;
+      accent-color: #ffcd56;
+    }
+    input[type='number'] {
+      width: 40px;
+    }
+    button {
+      margin: 10px;
+      padding: 8px 16px;
+      font-size: 1em;
+      background-color: #36a2eb;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      transition: all 0.2s ease;
+      transform: translateY(0);
+    }
+    button:hover {
+      background-color: #1e90ff;
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+      transform: translateY(-2px);
+    }
+    button:active {
+      background-color: #1565c0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transform: translateY(1px);
+    }
+    .danger-btn {
+      background-color: #b71c1c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 16px;
+      font-size: 1em;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+      transform: translateY(0);
+    }
+    .danger-btn:hover {
+      background-color: #d32f2f;
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.5);
+      transform: translateY(-2px);
+    }
+    .danger-btn:active {
+      background-color: #7f0000;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      transform: translateY(1px);
+    }
+    .simple-box, .chartpar-box, .chart-box, .slider-box, .filehandle-box, .event-box, .reset-box, .upload-box, .setting-box, .footer-box {
+      text-align: center;
+      margin: 10px;
+      padding: 5px;
+	  border-top: 1px solid #333;
+    }
+	
+	table {
+	  border-collapse: collapse;
+      width: 100%;
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+	}
+	th, td {
+	  background-color: #2c2c2c;
+	  border: 1px solid #444;
+	  padding: 4px 8px;
+	  text-align: left;
+	  white-space: nowrap;          /* mindig egy sor */
+	  overflow: hidden;             /* kilógó tartalom elrejtve */
+	  text-overflow: ellipsis;      /* "..." jelzés */
+	  max-width: 200px;             /* oszlop szélesség (fejléc alapján is állítható) */
+	  min-width: 80px;
+	}
+	th {
+      background-color: #4c4c4c;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+	}
+	td {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+	td[title] {
+	  cursor: help;                 /* tooltip jelzés */
+	}
+    tr:nth-child(even) {
+      background-color: #181818;
+    }
+    td[contenteditable='true'] {
+      background: #00832; /* alap szín, ha szerkeszthető */
+      outline: none;       /* ne legyen ronda keret */
+     }
+    tr.selected, .highlighted, td[contenteditable='true']:focus {
+      background-color: #663333 !important;
+      border: 2px solid #ffcd56;
+      transition: background-color 0.1s ease, border 0.1s ease;
+    }
+	#editorPopup {
+	  position: fixed;
+	  top: 20%;
+	  left: 50%;
+	  transform: translateX(-50%);
+	  background: #000;
+	  border: 2px solid #f00;
+	      border-radius: 6px;
+	  padding: 10px;
+	  z-index: 1000;
+	  display: none;
+	  box-shadow: 0 4px 12px rgba(200,200,200,1);
+	}
+	#editorPopup textarea {
+	  width: 400px;
+	  height: 200px;
+      background-color: #333;
+      color: #e0e0e0;
+	}
+
+    @media (max-width: 768px) {
+      body { padding: 20px; }
+      h2 { font-size: 1.8em; }
+      .latest-values { font-size: 1.5em; }
+      .chartpar-box, .slider-box { display: block; }
+      input[type='text'], input[list] { font-size: 1.5em; padding: 12px; }
+      input[type='range'] { width: 95%; height: 30px; }
+      button { font-size: 1.2em; padding: 12px 20px; }
+    }
+@media print {
+  body * {
+    visibility: hidden;   /* minden elrejtve */
+  }
+  #dataTable, #dataTable * {
+    visibility: visible;  /* csak a táblázat látszik */
+  }
+  #dataTable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+  </style>
+</head>
+<body>
+  <h2>CSV Nézegető és Szerkesztő</h2>
+  <div class='simple-box'>
+    <label>Kódolás:</label>
+    <select id="encodingSelect">
+      <option value="utf-8" selected>UTF-8</option>
+      <option value="windows-1250">Windows-1250 (Közép-Európa)</option>
+      <option value="iso-8859-2">ISO-8859-2 (Latin-2)</option>
+    </select>
+    <label>Határoló:</label>
+    <input type="text" id="delimiterInput" value=";" maxlength="1" style="width:30px; text-align:center;">
+    <input type='file' id='csvFile' accept='.csv'>
+    <button id="saveBtn">Mentés</button>
+  </div>
+  <div class='simple-box'>
+    <span id="rowCount" style="margin-left:20px; font-weight:bold;"></span>
+	<select id="fieldSelect"></select>
+    <label for='filterValue'>Szűrés...</label>
+    <input type='text' id='filterValue' placeholder='Érték' style='padding: 6px; font-size: 1em; width: 200px; margin-left: 10px;' />
+    <label><input type="checkbox" id="sortDesc"> Csökkenő sorrend</label>
+    <label>
+      <input type='checkbox' id='includeText' checked>
+      Tartalmazza / Nem tartalmazza
+    </label>
+  </div>
+  <div class='simple-box'>
+    <label>
+      <input type="radio" name="combineMode" value="and" checked> ÉS
+    </label>
+    <label>
+      <input type="radio" name="combineMode" value="or"> VAGY
+    </label>
+    <select id="fieldSelect2"></select>
+    <input type='text' id='filterValue2' placeholder='Érték 2' />
+  </div>
+  <div class='simple-box'> 
+    <button onclick="addRow()">Új sor</button>
+    <button class="danger-btn" onclick="deleteRow()">Sor törlése</button>
+    <button onclick="addColumn()">Új oszlop</button>
+    <button class="danger-btn" onclick="deleteColumn()">Oszlop törlése</button>
+    <button onclick="window.print()">Nyomtatás</button>
+  </div>
+  <div id="dataTable"></div>
+  <button id="scanBtn">Vonalkód beolvasása</button>
+  <div id="reader" style="width:300px;"></div>
+
+  <div class='footer-box' style='background-color: #505050;'>
+    <p>© 2025 IT_CSV v.1.0</p>
+  </div>
+  <div id="editorPopup">
+    <textarea id="editorArea"></textarea><br>
+    <button onclick="saveEdit()">Mentés</button>
+    <button onclick="closeEdit()">Mégse</button>
+  </div>
+
+<script>
+let scanner;
+let headers = [];
+let rows = [];
+let selectedRowIndex = null; // globális változó
+let selectedColIndex = null;
+let currentEdit = null; // {rowIndex, colIndex, td}
+const rowHeight = 28;     // px
+const visibleRows = 20;   // egyszerre ennyi sor renderelve
+
+document.getElementById("scanBtn").addEventListener("click", () => {
+//https://unpkg.com/html5-qrcode
+  const readerDiv = document.getElementById("reader");
+  readerDiv.style.display = "block"; // kamera előnézet megjelenítése
+  scanner = new Html5Qrcode("reader");
+  scanner.start(
+    //alert("!!!");
+    { facingMode: "environment" }, // hátlapi kamera
+    { fps: 10, qrbox: 250 },
+    decodedText => {
+      document.getElementById("filterValue").value = decodedText;
+      filterAndSortTable();
+      scanner.stop().then(() => {
+        document.getElementById("reader").style.display = "none";
+      });
+    },
+    errorMessage => {
+      alert("Hiba: " + errorMessage); // telefonon is látszik
+    }
+  );
+});
+
+document.getElementById('csvFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    const buffer = evt.target.result;
+    const view = new Uint8Array(buffer);
+    let encoding = document.getElementById('encodingSelect').value || "utf-8";
+    if (view[0] === 0xEF && view[1] === 0xBB && view[2] === 0xBF) {
+      encoding = "utf-8"; // BOM → biztosan UTF-8
+    }
+    const decoder = new TextDecoder(encoding);
+    let text = decoder.decode(buffer);
+    if (text.charCodeAt(0) === 0xFEFF) {
+      text = text.slice(1);
+    }
+    const delimiter = document.getElementById('delimiterInput').value || ",";
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+    headers = lines[0].split(delimiter);
+    rows = lines.slice(1).map(line => line.split(delimiter));
+    buildFieldSelect();
+    drawVirtualTable();
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function buildFieldSelect() {
+  const select = document.getElementById('fieldSelect');
+  const select2 = document.getElementById('fieldSelect2');
+  select.innerHTML = '';
+  select2.innerHTML = '';
+  const optAll = document.createElement('option');
+  const optAll2 = document.createElement('option');
+  optAll.value = 'all';
+  optAll2.value = 'all';
+  optAll.textContent = 'Összes mező';
+  optAll2.textContent = 'Összes mező';
+  select.appendChild(optAll);
+  select2.appendChild(optAll2);
+  headers.forEach((h, idx) => {
+    const opt = document.createElement('option');
+    const opt2 = document.createElement('option');
+    opt.value = idx;
+    opt2.value = idx;
+    opt.textContent = h;
+    opt2.textContent = h;
+    select.appendChild(opt);
+    select2.appendChild(opt2);
+  });
+}
+
+function drawVirtualTable() {
+  const container = document.getElementById('dataTable');
+  container.innerHTML = '';
+  const textInclude = document.getElementById('includeText').checked;
+  const filterText = document.getElementById('filterValue').value.toLowerCase();
+  const fieldName = document.getElementById('fieldSelect').value;
+  const sortDesc = document.getElementById('sortDesc').checked;
+  let filtered = filterAndSortTable();  
+  const totalHeight = filtered.length * rowHeight;
+  const viewport = document.createElement('div');
+  viewport.style.height = (visibleRows * rowHeight) + 'px';
+  viewport.style.overflowY = 'scroll';
+  viewport.style.position = 'relative';
+  const spacer = document.createElement('div');
+  spacer.style.height = totalHeight + 'px';
+  viewport.appendChild(spacer);
+  const table = document.createElement('table');
+  table.style.position = 'absolute';
+  table.style.top = '0';
+  table.style.left = '0';
+  table.style.right = '0';
+  table.style.borderCollapse = 'collapse';
+  table.style.width = '100%';
+  const thead = document.createElement('thead');
+  const headRow = buildHeaderRow();   // itt épül fel a kijelölhető fejléc
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  table.appendChild(tbody);
+
+	function renderRows(startIndex) {
+	  tbody.innerHTML = '';
+	  const endIndex = Math.min(startIndex + visibleRows, filtered.length);
+	  for (let i = startIndex; i < endIndex; i++) {
+		const obj = filtered[i];
+		const tr = document.createElement('tr');
+		tr.onclick = () => {
+		  // előző kijelölés törlése
+		  tbody.querySelectorAll("tr").forEach(r => r.classList.remove("selected"));
+		  tr.classList.add("selected");
+		  selectedRowIndex = obj.index; // eredeti rows index
+		};
+		obj.row.forEach((val, ci) => {
+		  const td = document.createElement('td');
+		  td.textContent = val;
+		  td.title = val;
+		  td.oncontextmenu = (e) => {
+			e.preventDefault(); // ne nyíljon meg a böngésző menü
+			navigator.clipboard.writeText(td.textContent).then(() => {
+				console.log("Másolva a vágólapra:", td.textContent);
+			}).catch(err => {
+			console.error("Másolás sikertelen:", err);
+			});
+			currentEdit = { rowIndex: obj.index, colIndex: ci, td };
+			document.getElementById('editorArea').value = td.textContent;
+			document.getElementById('editorPopup').style.display = 'block';
+		  };
+		  tr.appendChild(td);
+		});
+		tbody.appendChild(tr);
+	  }
+  table.style.top = (startIndex * rowHeight) + 'px';
+}
+  viewport.addEventListener('scroll', () => {
+    const startIndex = Math.floor(viewport.scrollTop / rowHeight);
+    renderRows(startIndex);
+  });
+  renderRows(0);
+  viewport.appendChild(table);
+  container.appendChild(viewport);
+  scrollToSelectedColumn(table, viewport);
+}
+
+function buildHeaderRow() {
+  const headRow = document.createElement('tr');
+  headers.forEach((h, idx) => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    if (selectedColIndex === idx) {
+      th.style.background = "#0000ff";
+    }
+    th.onclick = () => {
+      // előző kijelölés törlése
+      document.querySelectorAll("th").forEach(el => el.style.background = "");
+      th.style.background = "#0000ff";
+      selectedColIndex = idx;
+      document.getElementById("fieldSelect").value = idx.toString();
+      drawVirtualTable();
+    };
+    headRow.appendChild(th);
+  });
+  return headRow;
+}
+
+document.getElementById("fieldSelect").addEventListener("change", e => {
+  const idx = parseInt(e.target.value, 10);
+  if (!isNaN(idx)) {
+    selectedColIndex = idx;
+  } else {
+    selectedColIndex = null;
+  }
+  drawVirtualTable(); // újrarajzolás → buildHeaderRow visszaállítja a kiemelést
+});
+
+document.getElementById("fieldSelect2").addEventListener("change", e => {
+  const idx = parseInt(e.target.value, 10);
+  if (!isNaN(idx)) {
+    selectedColIndex = idx;
+  } else {
+    selectedColIndex = null;
+  }
+  drawVirtualTable(); // újrarajzolás → buildHeaderRow visszaállítja a kiemelést
+});
+
+ function filterAndSortTable() {
+  const textInclude = document.getElementById('includeText').checked;
+  const filterText = document.getElementById('filterValue').value.toLowerCase();
+  const filterText2 = document.getElementById('filterValue2').value.toLowerCase();
+  const fieldName = document.getElementById('fieldSelect').value;
+  const fieldName2 = document.getElementById('fieldSelect2').value;
+  const mode = document.querySelector('input[name="combineMode"]:checked').value;
+  const sortDesc = document.getElementById('sortDesc').checked;
+  let filtered = rows.map((r, i) => ({ row: r, index: i })).filter(obj => {
+    let match1 = false;
+    if (fieldName === 'all') {
+      match1 = obj.row.some(val => String(val).toLowerCase().includes(filterText));
+    } else {
+      const idx1 = parseInt(fieldName, 10);
+      if (!isNaN(idx1)) {
+        match1 = String(obj.row[idx1]).toLowerCase().includes(filterText);
+      }
+    }
+    let match2 = false;
+    if (fieldName2 === 'all') {
+      match2 = obj.row.some(val => String(val).toLowerCase().includes(filterText2));
+    } else {
+      const idx2 = parseInt(fieldName2, 10);
+      if (!isNaN(idx2)) {
+        match2 = String(obj.row[idx2]).toLowerCase().includes(filterText2);
+      }
+    }
+    let combined = mode === "and" ? (match1 && match2) : (match1 || match2);
+    return (textInclude && combined) || (!textInclude && !combined);
+  });
+  if (fieldName !== 'all' || fieldName2 != 'all') {
+    const idx = parseInt(fieldName, 10);
+    if (!isNaN(idx)) {
+      filtered.sort((a, b) => {
+        const valA = a.row[idx] || "";
+        const valB = b.row[idx] || "";
+        const numA = parseFloat(valA), numB = parseFloat(valB);
+        let cmp;
+        if (!isNaN(numA) && !isNaN(numB)) cmp = numA - numB;
+        else cmp = valA.localeCompare(valB);
+        return sortDesc ? -cmp : cmp;
+      });
+    }
+  }
+  document.getElementById('saveBtn').textContent = filtered.length !== rows.length ? "Mentés (Szűrt)" : "Mentés";
+  document.getElementById('rowCount').textContent = filtered.length + " sor";
+  document.getElementById('saveBtn').onclick = () => saveFilteredCSV(filtered);
+  return filtered;
+}
+ 
+document.getElementById('fieldSelect').addEventListener('change', drawVirtualTable);
+document.getElementById('filterValue').addEventListener('input', drawVirtualTable);
+document.getElementById('sortDesc').addEventListener('change', drawVirtualTable);
+document.getElementById('includeText').addEventListener('change', drawVirtualTable);
+document.querySelectorAll('input[name="combineMode"]').forEach(el => {
+  el.addEventListener('change', drawVirtualTable);
+});
+document.getElementById('fieldSelect2').addEventListener('change', drawVirtualTable);
+document.getElementById('filterValue2').addEventListener('input', drawVirtualTable);
+
+function scrollToSelectedColumn(table, viewport) {
+  const fieldName = document.getElementById('fieldSelect').value;
+  if (fieldName === 'all') return;
+  const idx = parseInt(fieldName, 10);
+  if (isNaN(idx)) return;
+  const ths = table.querySelectorAll("thead th");
+  if (ths[idx]) {
+    const targetLeft = ths[idx].offsetLeft;
+    const targetRight = targetLeft + ths[idx].offsetWidth;
+    const viewLeft = viewport.scrollLeft;
+    const viewRight = viewLeft + viewport.clientWidth;
+    if (targetLeft >= viewLeft && targetRight <= viewRight) {
+      ths[idx].style.background = "#0000ff";
+      return;
+    }
+    let newScroll = viewLeft;
+    if (targetLeft < viewLeft) {
+      newScroll = targetLeft - 80;
+    } else if (targetRight > viewRight) {
+      newScroll = targetRight - viewport.clientWidth + 80;
+    }
+    viewport.scrollLeft = Math.max(0, newScroll);
+    ths[idx].style.background = "#0000ff";
+  }
+}
+
+function addRow() {
+  const newRow = headers.map(() => "");
+  rows.push(newRow);
+  drawVirtualTable();
+}
+
+function deleteRow() {
+  if (selectedRowIndex !== null) {
+    if (confirm("Biztosan törlöd a kijelölt sort?")) {
+      rows.splice(selectedRowIndex, 1);
+      selectedRowIndex = null;
+      drawVirtualTable();
+    }
+  } else {
+    alert("Előbb jelölj ki egy sort törléshez!");
+  }
+}
+
+function addColumn() {
+  const newName = prompt("Új mező neve:");
+  if (!newName) return;
+  let insertIndex = (selectedColIndex !== null) ? selectedColIndex + 1 : headers.length;
+  headers.splice(insertIndex, 0, newName);
+  rows.forEach(r => r.splice(insertIndex, 0, "")); // minden sorba új üres cella
+  buildFieldSelect();
+  drawVirtualTable();
+}
+
+function deleteColumn() {
+  if (selectedColIndex !== null) {
+    if (confirm("Biztosan törlöd a kijelölt oszlopot?")) {
+      headers.splice(selectedColIndex, 1);
+      rows.forEach(r => r.splice(selectedColIndex, 1));
+      selectedColIndex = null;
+      buildFieldSelect();
+      drawVirtualTable();
+    }
+  } else {
+    alert("Előbb jelölj ki egy oszlopot törléshez!");
+  }
+}
+
+function saveEdit() {
+  if (!currentEdit) return;
+  const newVal = document.getElementById('editorArea').value.trim();
+  rows[currentEdit.rowIndex][currentEdit.colIndex] = newVal;
+  currentEdit.td.textContent = newVal;
+  currentEdit.td.title = newVal;
+  closeEdit();
+}
+
+function closeEdit() {
+  document.getElementById('editorPopup').style.display = 'none';
+  currentEdit = null;
+}
+
+function saveFilteredCSV(filtered) {
+  const delimiter = document.getElementById('delimiterInput').value || ",";
+  const csv = [headers.join(delimiter)]
+    .concat(filtered.map(obj => obj.row.join(delimiter)))
+    .join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'table.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+</script>
