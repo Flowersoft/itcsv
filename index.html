@@ -309,7 +309,6 @@ document.getElementById("scanBtn").addEventListener("click", () => {
     decodedText => {
       document.getElementById("filterValue").value = decodedText;
 	  input.dispatchEvent(new Event("input", { bubbles: true }));
-      filterAndSortTable();
       scanner.stop().then(() => {
         document.getElementById("reader").style.display = "none";
       });
